@@ -531,9 +531,9 @@
             return { totalSeconds: diff, years, days, hours, minutes, seconds };
         }
 
-        // ========== 格式化数字（添加千分位） ==========
+        // ========== 格式化数字 ==========
         function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return num.toString();
         }
 
         // ========== 更新显示 ==========
