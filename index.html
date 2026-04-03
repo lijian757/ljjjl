@@ -149,10 +149,10 @@
 
         /* 秒数数字 */
         .seconds {
-            font-size: clamp(4rem, 15vw, 12rem);
+            font-size: clamp(2rem, 8vw, 8rem);
             font-weight: 100;
             font-family: 'Courier New', monospace;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.02em;
             background: linear-gradient(135deg, #ff6b9d 0%, #c44eff 25%, #6b5bff 50%, #00d4ff 75%, #ff6b9d 100%);
             background-size: 400% 400%;
             -webkit-background-clip: text;
@@ -163,6 +163,9 @@
             position: relative;
             display: inline-block;
             transition: transform 0.1s ease;
+            max-width: 95vw;
+            word-break: break-all;
+            line-height: 1.2;
         }
 
         /* 数字跳动效果 */
