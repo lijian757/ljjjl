@@ -68,6 +68,14 @@
             text-align: center;
             z-index: 1;
             padding: 20px;
+            padding-top: 80px; /* 手机顶部留出空间，避免被浏览器地址栏遮挡 */
+        }
+
+        /* iOS 安全区域适配 */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            .container {
+                padding-top: calc(80px + env(safe-area-inset-top));
+            }
         }
 
         /* ========== 主标题样式 ========== */
