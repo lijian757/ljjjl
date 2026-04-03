@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我们的爱情运行时长</title>
+    <style>
+        /* ========== 全局样式重置 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ========== 深色背景 + 星空效果 ========== */
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            position: relative;
+        }
+
+        /* ========== 背景粒子效果 ========== */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* ========== 主容器 ========== */
+        .container {
+            text-align: center;
+            z-index: 1;
+            padding: 20px;
+        }
+
+        /* ========== 主标题样式 ========== */
+        .title {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #ff6b9d, #c44eff, #6b5bff, #00d4ff);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite, glow 3s ease-in-out infinite;
+            text-shadow: 0 0 40px rgba(196, 78, 255, 0.5);
+            position: relative;
+        }
+
+        /* 标题光晕效果 */
+        .title::before {
+            content: '我们的爱情运行时长';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #ff6b9d, #c44eff, #6b5bff, #00d4ff);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+            filter: blur(20px);
+            opacity: 0.7;
+            z-index: -1;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        /* ========== 数字显示区域 ========== */
+        .timer-wrapper {
+            position: relative;
+            margin: 40px 0;
+        }
+
+        /* 数字外圈光晕 */
+        .timer-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120%;
+            height: 200%;
+            background: radial-gradient(ellipse, rgba(196, 78, 255, 0.15) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+        }
+
+        /* 秒数数字 */
+        .seconds {
+            font-size: clamp(4rem, 15vw, 12rem);
+            font-weight: 100;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.1em;
+            background: linear-gradient(135deg, #ff6b9d 0%, #c44eff 25%, #6b5bff 50%, #00d4ff 75%, #ff6b9d 100%);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 6s ease infinite, numberGlow 2s ease-in-out infinite;
+            text-shadow: 0 0 60px rgba(196, 78, 255, 0.8);
+            position: relative;
+            display: inline-block;
+            transition: transform 0.1s ease;
+        }
+
+        /* 数字跳动效果 */
+        .seconds.bump {
+            animation: gradientShift 6s ease infinite, numberGlow 2s ease-in-out infinite, bump 0.15s ease;
+        }
+
+        @keyframes bump {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        /* 数字光晕层 */
+        .seconds::before {
+            content: attr(data-value);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: linear-gradient(135deg, #ff6b9d, #c44eff, #6b5bff, #00d4ff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 6s ease infinite;
+            filter: blur(30px);
+            opacity: 0.6;
+            z-index: -1;
+        }
+
+        @keyframes numberGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(255, 107, 157, 0.5))
+                        drop-shadow(0 0 40px rgba(196, 78, 255, 0.3));
+            }
+            50% {
+                filter: drop-shadow(0 0 30px rgba(255, 107, 157, 0.8))
+                        drop-shadow(0 0 60px rgba(196, 78, 255, 0.5));
+            }
+        }
+
+        /* 秒字单位 */
+        .unit {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: rgba(255, 255, 255, 0.6);
+            margin-left: 10px;
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            animation: fadeInOut 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        /* ========== 详细时间显示 ========== */
+        .details {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: clamp(10px, 4vw, 40px);
+            flex-wrap: wrap;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(196, 78, 255, 0.2);
+            border-radius: 15px;
+            padding: clamp(15px, 3vw, 25px);
+            min-width: clamp(80px, 15vw, 120px);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .detail-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .detail-item:hover {
+            border-color: rgba(196, 78, 255, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(196, 78, 255, 0.2);
+        }
+
+        .detail-value {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 200;
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .detail-label {
+            font-size: clamp(0.7rem, 2vw, 0.9rem);
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
+            letter-spacing: 0.1em;
+        }
+
+        /* ========== 副标题 ========== */
+        .subtitle {
+            font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 40px;
+            letter-spacing: 0.15em;
+            font-weight: 300;
+            position: relative;
+        }
+
+        .subtitle::before,
+        .subtitle::after {
+            content: '';
+            display: inline-block;
+            width: 30px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(196, 78, 255, 0.5));
+            vertical-align: middle;
+            margin: 0 15px;
+        }
+
+        .subtitle::after {
+            background: linear-gradient(90deg, rgba(196, 78, 255, 0.5), transparent);
+        }
+
+        /* ========== 底部状态栏 ========== */
+        .status-bar {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: clamp(0.7rem, 2vw, 0.9rem);
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.15em;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 15px 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: statusBlink 2s ease-in-out infinite;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        @keyframes statusBlink {
+            0%, 100% { opacity: 1; box-shadow: 0 0 10px #00ff88; }
+            50% { opacity: 0.5; box-shadow: 0 0 20px #00ff88; }
+        }
+
+        /* ========== 心形装饰 ========== */
+        .hearts {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0;
+            animation: heartFloat 8s ease-in-out infinite;
+        }
+
+        @keyframes heartFloat {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* ========== 响应式调整 ========== */
+        @media (max-width: 768px) {
+            .details {
+                gap: 10px;
+            }
+
+            .detail-item {
+                min-width: 70px;
+                padding: 12px;
+            }
+
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px 20px;
+            }
+
+            .subtitle::before,
+            .subtitle::after {
+                display: none;
+            }
+        }
+
+        /* ========== 闪烁线条装饰 ========== */
+        .line-decoration {
+            position: fixed;
+            width: 1px;
+            height: 100px;
+            background: linear-gradient(180deg, transparent, rgba(196, 78, 255, 0.5), transparent);
+            animation: lineFloat 5s ease-in-out infinite;
+        }
+
+        @keyframes lineFloat {
+            0%, 100% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景粒子 -->
+    <div class="particles" id="particles"></div>
+
+    <!-- 心形装饰 -->
+    <div class="hearts" id="hearts"></div>
+
+    <!-- 主内容 -->
+    <div class="container">
+        <!-- 主标题 -->
+        <h1 class="title">我们的爱情运行时长</h1>
+
+        <!-- 秒数显示 -->
+        <div class="timer-wrapper">
+            <span class="seconds" id="seconds" data-value="0">0</span>
+            <span class="unit">秒</span>
+        </div>
+
+        <!-- 详细时间 -->
+        <div class="details">
+            <div class="detail-item">
+                <div class="detail-value" id="years">0</div>
+                <div class="detail-label">年</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-value" id="days">0</div>
+                <div class="detail-label">天</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-value" id="hours">0</div>
+                <div class="detail-label">时</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-value" id="minutes">0</div>
+                <div class="detail-label">分</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-value" id="secs">0</div>
+                <div class="detail-label">秒</div>
+            </div>
+        </div>
+
+        <!-- 副标题 -->
+        <p class="subtitle">Since 2021-10-24 18:30:00</p>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <div class="status-bar">
+        <div class="status-dot"></div>
+        <span>System: Love.exe</span>
+        <span>|</span>
+        <span>Status: Running Forever</span>
+    </div>
+
+    <script>
+        // ========== 配置 ==========
+        const START_DATE = new Date('2021-10-24T18:30:00');
+
+        // ========== DOM 元素 ==========
+        const secondsEl = document.getElementById('seconds');
+        const yearsEl = document.getElementById('years');
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secsEl = document.getElementById('secs');
+        const particlesContainer = document.getElementById('particles');
+        const heartsContainer = document.getElementById('hearts');
+
+        // ========== 初始化粒子效果 ==========
+        function createParticles() {
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // ========== 创建心形装饰 ==========
+        function createHearts() {
+            const heartSymbols = ['❤', '💕', '💗', '💖', '💝'];
+            for (let i = 0; i < 10; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.textContent = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDelay = Math.random() * 8 + 's';
+                heart.style.animationDuration = (6 + Math.random() * 4) + 's';
+                heart.style.fontSize = (15 + Math.random() * 15) + 'px';
+                heartsContainer.appendChild(heart);
+            }
+        }
+
+        // ========== 计算时间差 ==========
+        function calculateTimeDiff() {
+            const now = new Date();
+            const diff = Math.floor((now - START_DATE) / 1000); // 总秒数
+
+            // 计算各个单位
+            const years = Math.floor(diff / (365.25 * 24 * 3600));
+            const remainingAfterYears = diff % Math.floor(365.25 * 24 * 3600);
+            const days = Math.floor(remainingAfterYears / (24 * 3600));
+            const hours = Math.floor((diff % (24 * 3600)) / 3600);
+            const minutes = Math.floor((diff % 3600) / 60);
+            const seconds = diff % 60;
+
+            return { totalSeconds: diff, years, days, hours, minutes, seconds };
+        }
+
+        // ========== 格式化数字（添加千分位） ==========
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // ========== 更新显示 ==========
+        let lastTotalSeconds = 0;
+
+        function updateDisplay() {
+            const time = calculateTimeDiff();
+
+            // 更新总秒数
+            secondsEl.textContent = formatNumber(time.totalSeconds);
+            secondsEl.setAttribute('data-value', formatNumber(time.totalSeconds));
+
+            // 秒数变化时添加跳动效果
+            if (time.totalSeconds !== lastTotalSeconds) {
+                secondsEl.classList.remove('bump');
+                void secondsEl.offsetWidth; // 触发重绘
+                secondsEl.classList.add('bump');
+                lastTotalSeconds = time.totalSeconds;
+            }
+
+            // 更新详细时间
+            yearsEl.textContent = time.years;
+            daysEl.textContent = time.days;
+            hoursEl.textContent = String(time.hours).padStart(2, '0');
+            minutesEl.textContent = String(time.minutes).padStart(2, '0');
+            secsEl.textContent = String(time.seconds).padStart(2, '0');
+        }
+
+        // ========== 初始化 ==========
+        function init() {
+            createParticles();
+            createHearts();
+            updateDisplay();
+
+            // 每秒更新一次
+            setInterval(updateDisplay, 1000);
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
