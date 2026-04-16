@@ -17,10 +17,9 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
             background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
-            overflow: hidden;
+            overflow-x: hidden;
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
             position: relative;
         }
@@ -68,13 +67,13 @@
             text-align: center;
             z-index: 1;
             padding: 20px;
-            padding-top: 80px; /* 手机顶部留出空间，避免被浏览器地址栏遮挡 */
+            padding-top: max(12vh, 80px); /* 手机顶部留出空间，避免被浏览器地址栏遮挡 */
         }
 
         /* iOS 安全区域适配 */
         @supports (padding-top: env(safe-area-inset-top)) {
             .container {
-                padding-top: calc(80px + env(safe-area-inset-top));
+                padding-top: calc(max(12vh, 80px) + env(safe-area-inset-top));
             }
         }
 
@@ -418,6 +417,101 @@
                 opacity: 0;
             }
         }
+
+        /* ========== 音乐控制按钮 ========== */
+        .music-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 1px solid rgba(196, 78, 255, 0.3);
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            color: rgba(255, 255, 255, 0.8);
+            outline: none;
+        }
+
+        .music-btn:hover {
+            border-color: rgba(196, 78, 255, 0.6);
+            box-shadow: 0 0 20px rgba(196, 78, 255, 0.3);
+        }
+
+        .music-btn.playing {
+            animation: musicSpin 3s linear infinite;
+            border-color: rgba(196, 78, 255, 0.6);
+            box-shadow: 0 0 15px rgba(196, 78, 255, 0.3);
+        }
+
+        .music-btn .music-tip {
+            display: none;
+            position: absolute;
+            top: 52px;
+            right: 0;
+            white-space: nowrap;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 1px solid rgba(196, 78, 255, 0.2);
+        }
+
+        .music-btn:hover .music-tip {
+            display: block;
+        }
+
+        @keyframes musicSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========== 留言板样式 ========== */
+        .message-board {
+            margin-top: 60px;
+            width: 100%;
+            max-width: 800px;
+            padding-bottom: 100px;
+        }
+
+        .message-board-title {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            font-weight: 300;
+            letter-spacing: 0.2em;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .message-board-title::before,
+        .message-board-title::after {
+            content: '';
+            display: inline-block;
+            width: 30px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(196, 78, 255, 0.5));
+            vertical-align: middle;
+            margin: 0 15px;
+        }
+
+        .message-board-title::after {
+            background: linear-gradient(90deg, rgba(196, 78, 255, 0.5), transparent);
+        }
+
+        @media (max-width: 768px) {
+            .message-board-title::before,
+            .message-board-title::after {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -426,6 +520,15 @@
 
     <!-- 心形装饰 -->
     <div class="hearts" id="hearts"></div>
+
+    <!-- 背景音乐 -->
+    <audio id="bgm" loop preload="auto">
+        <source src="bgm.mp3" type="audio/mpeg">
+    </audio>
+    <button class="music-btn" id="musicBtn" title="背景音乐">
+        <span id="musicIcon">&#9835;</span>
+        <span class="music-tip">点击播放音乐</span>
+    </button>
 
     <!-- 主内容 -->
     <div class="container">
@@ -464,6 +567,18 @@
 
         <!-- 副标题 -->
         <p class="subtitle">Since 2021-10-24 18:30:00</p>
+
+        <!-- 留言板 -->
+        <div class="message-board">
+            <h2 class="message-board-title">我们的留言板</h2>
+            <script src="https://utteranc.es/client.js"
+                    repo="lijian757/ljjjl"
+                    issue-term="pathname"
+                    theme="github-dark"
+                    crossorigin="anonymous"
+                    async>
+            </script>
+        </div>
     </div>
 
     <!-- 底部状态栏 -->
@@ -574,6 +689,36 @@
 
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', init);
+
+        // ========== 背景音乐控制 ==========
+        const bgm = document.getElementById('bgm');
+        const musicBtn = document.getElementById('musicBtn');
+        const musicIcon = document.getElementById('musicIcon');
+        const musicTip = musicBtn.querySelector('.music-tip');
+        let musicPlaying = false;
+
+        bgm.volume = 0.3;
+
+        function toggleMusic() {
+            if (musicPlaying) {
+                bgm.pause();
+                musicBtn.classList.remove('playing');
+                musicIcon.innerHTML = '&#9835;';
+                musicTip.textContent = '点击播放音乐';
+                musicPlaying = false;
+            } else {
+                bgm.play().then(() => {
+                    musicBtn.classList.add('playing');
+                    musicIcon.innerHTML = '&#9834;';
+                    musicTip.textContent = '点击暂停音乐';
+                    musicPlaying = true;
+                }).catch(() => {
+                    musicTip.textContent = '请先添加 bgm.mp3 音乐文件';
+                });
+            }
+        }
+
+        musicBtn.addEventListener('click', toggleMusic);
     </script>
 </body>
 </html>
