@@ -699,6 +699,29 @@
 
         bgm.volume = 0.3;
 
+        function startMusic() {
+            bgm.play().then(() => {
+                musicBtn.classList.add('playing');
+                musicIcon.innerHTML = '&#9834;';
+                musicTip.textContent = '点击暂停音乐';
+                musicPlaying = true;
+            }).catch(() => {
+                musicTip.textContent = '点击此处开始播放';
+                // 浏览器阻止了自动播放，监听首次点击来启动
+                document.addEventListener('click', function autoStart() {
+                    if (!musicPlaying) {
+                        bgm.play().then(() => {
+                            musicBtn.classList.add('playing');
+                            musicIcon.innerHTML = '&#9834;';
+                            musicTip.textContent = '点击暂停音乐';
+                            musicPlaying = true;
+                        }).catch(() => {});
+                    }
+                    document.removeEventListener('click', autoStart);
+                }, { once: true });
+            });
+        }
+
         function toggleMusic() {
             if (musicPlaying) {
                 bgm.pause();
@@ -707,18 +730,14 @@
                 musicTip.textContent = '点击播放音乐';
                 musicPlaying = false;
             } else {
-                bgm.play().then(() => {
-                    musicBtn.classList.add('playing');
-                    musicIcon.innerHTML = '&#9834;';
-                    musicTip.textContent = '点击暂停音乐';
-                    musicPlaying = true;
-                }).catch(() => {
-                    musicTip.textContent = '请先添加 bgm.mp3 音乐文件';
-                });
+                startMusic();
             }
         }
 
         musicBtn.addEventListener('click', toggleMusic);
+
+        // 页面加载后自动播放
+        document.addEventListener('DOMContentLoaded', startMusic);
     </script>
 </body>
 </html>
