@@ -1503,8 +1503,18 @@
         // 页面加载后自动播放
         document.addEventListener('DOMContentLoaded', startMusic);
 
+        // ========== API 基础调用 ==========
+        const API = 'http://ftp6308069.host100.abeiyun.cn/api.php';
+
+        async function apiCall(action, data = null) {
+            const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+            if (data) opts.body = JSON.stringify(data);
+            const res = await fetch(API + '?action=' + action, opts);
+            return res.json();
+        }
+
         // ========== 相册轮播 ==========
-        const PHOTO_KEY = 'love_photos';
+        let cachedPhotos = null;
 
         function getDefaultPhotos() {
             return [
@@ -1513,23 +1523,24 @@
             ];
         }
 
-        function getUploadedPhotos() {
-            try { return JSON.parse(localStorage.getItem(PHOTO_KEY)) || []; }
-            catch { return []; }
+        async function getUploadedPhotos() {
+            if (cachedPhotos) return cachedPhotos;
+            try {
+                const res = await fetch(API + '?action=get_photos');
+                cachedPhotos = await res.json();
+                return cachedPhotos;
+            } catch { return []; }
         }
 
-        function saveUploadedPhotos(photos) {
-            localStorage.setItem(PHOTO_KEY, JSON.stringify(photos));
-        }
-
-        function getAllPhotos() {
-            return [...getDefaultPhotos(), ...getUploadedPhotos()];
+        function getAllPhotosSync() {
+            const uploaded = cachedPhotos || [];
+            return [...getDefaultPhotos(), ...uploaded.map(p => 'uploads/' + p.filename)];
         }
 
         let currentSlide = 0;
 
         function buildCarousel() {
-            const photos = getAllPhotos();
+            const photos = getAllPhotosSync();
             const track = document.getElementById('carouselTrack');
             const dots = document.getElementById('carouselDots');
             const carousel = document.getElementById('carousel');
@@ -1563,16 +1574,17 @@
             goToSlide(currentSlide);
         }
 
-        function initCarousel() {
+        async function initCarousel() {
+            await getUploadedPhotos();
             buildCarousel();
 
             document.getElementById('carouselPrev').addEventListener('click', () => {
-                const total = getAllPhotos().length;
+                const total = getAllPhotosSync().length;
                 if (total === 0) return;
                 goToSlide(currentSlide === 0 ? total - 1 : currentSlide - 1);
             });
             document.getElementById('carouselNext').addEventListener('click', () => {
-                const total = getAllPhotos().length;
+                const total = getAllPhotosSync().length;
                 if (total === 0) return;
                 goToSlide(currentSlide === total - 1 ? 0 : currentSlide + 1);
             });
@@ -1582,7 +1594,7 @@
             const carousel = document.getElementById('carousel');
             carousel.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
             carousel.addEventListener('touchend', e => {
-                const total = getAllPhotos().length;
+                const total = getAllPhotosSync().length;
                 if (total === 0) return;
                 const diff = touchStartX - e.changedTouches[0].clientX;
                 if (Math.abs(diff) > 50) {
@@ -1597,7 +1609,7 @@
                     document.getElementById('photoInput').click();
                 });
             });
-            document.getElementById('photoInput').addEventListener('change', (e) => {
+            document.getElementById('photoInput').addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 if (file.size > 5 * 1024 * 1024) {
@@ -1605,11 +1617,12 @@
                     return;
                 }
                 const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const uploaded = getUploadedPhotos();
-                    uploaded.push(ev.target.result);
-                    saveUploadedPhotos(uploaded);
-                    currentSlide = getAllPhotos().length - 1;
+                reader.onload = async (ev) => {
+                    const res = await apiCall('upload_photo', { password: DELETE_PASSWORD, data: ev.target.result });
+                    if (res.error) { alert(res.error); return; }
+                    cachedPhotos = null;
+                    await getUploadedPhotos();
+                    currentSlide = getAllPhotosSync().length - 1;
                     buildCarousel();
                 };
                 reader.readAsDataURL(file);
@@ -1618,21 +1631,23 @@
 
             // 删除当前照片
             document.getElementById('deletePhotoBtn').addEventListener('click', () => {
-                const photos = getAllPhotos();
+                const photos = getAllPhotosSync();
                 if (photos.length === 0) return;
-                showPasswordModal('请输入删除密码', '确认删除', () => {
+                showPasswordModal('请输入删除密码', '确认删除', async () => {
                     const defaultCount = getDefaultPhotos().length;
                     if (currentSlide < defaultCount) {
-                        // 默认照片无法真正删除，提示用户
                         alert('这是默认照片，无法删除');
                         return;
                     }
-                    const uploaded = getUploadedPhotos();
+                    const uploaded = cachedPhotos || [];
                     const idx = currentSlide - defaultCount;
-                    uploaded.splice(idx, 1);
-                    saveUploadedPhotos(uploaded);
-                    if (currentSlide >= getAllPhotos().length) {
-                        currentSlide = Math.max(0, getAllPhotos().length - 1);
+                    if (uploaded[idx]) {
+                        await apiCall('delete_photo', { password: DELETE_PASSWORD, id: uploaded[idx].id });
+                    }
+                    cachedPhotos = null;
+                    await getUploadedPhotos();
+                    if (currentSlide >= getAllPhotosSync().length) {
+                        currentSlide = Math.max(0, getAllPhotosSync().length - 1);
                     }
                     buildCarousel();
                 });
@@ -1648,20 +1663,20 @@
         }
 
         // ========== 留言板 ==========
-        const MSG_KEY = 'love_messages';
+        let cachedMessages = null;
 
-        function getMessages() {
-            try { return JSON.parse(localStorage.getItem(MSG_KEY)) || []; }
-            catch { return []; }
+        async function getMessages() {
+            if (cachedMessages) return cachedMessages;
+            try {
+                const res = await fetch(API + '?action=get_messages');
+                cachedMessages = await res.json();
+                return cachedMessages;
+            } catch { return []; }
         }
 
-        function saveMessages(msgs) {
-            localStorage.setItem(MSG_KEY, JSON.stringify(msgs));
-        }
-
-        function renderMessages() {
+        async function renderMessages() {
             const list = document.getElementById('messageList');
-            const msgs = getMessages();
+            const msgs = await getMessages();
             if (msgs.length === 0) {
                 list.innerHTML = '<div class="message-empty">还没有留言，写下第一条吧</div>';
                 return;
@@ -1672,7 +1687,7 @@
                         <span class="message-author">${escapeHtml(m.author)}</span>
                         <div style="display:flex;align-items:center;gap:10px;">
                             <span class="message-time">${m.time}</span>
-                            <button class="message-delete-btn" onclick="showPasswordModal('请输入删除密码', '确认删除', null, ${i})">删除</button>
+                            <button class="message-delete-btn" onclick="deleteMessage(${m.id})">删除</button>
                         </div>
                     </div>
                     <div class="message-content">${escapeHtml(m.content)}</div>
@@ -1680,10 +1695,18 @@
             `).reverse().join('');
         }
 
+        async function deleteMessage(id) {
+            showPasswordModal('请输入删除密码', '确认删除', async () => {
+                await apiCall('delete_message', { password: DELETE_PASSWORD, id: id });
+                cachedMessages = null;
+                renderMessages();
+            });
+        }
+
         // ========== 删除留言 ==========
         const DELETE_PASSWORD = '1314';
 
-        function showPasswordModal(title, confirmText, onSuccess, msgIndex) {
+        function showPasswordModal(title, confirmText, onSuccess) {
             const overlay = document.createElement('div');
             overlay.className = 'delete-modal-overlay';
             overlay.innerHTML = `
@@ -1710,16 +1733,8 @@
 
             const confirmDelete = () => {
                 if (pwdInput.value === DELETE_PASSWORD) {
-                    if (onSuccess) {
-                        close();
-                        onSuccess();
-                    } else {
-                        const msgs = getMessages();
-                        msgs.splice(msgIndex, 1);
-                        saveMessages(msgs);
-                        close();
-                        renderMessages();
-                    }
+                    close();
+                    if (onSuccess) onSuccess();
                 } else {
                     errorEl.textContent = '密码错误';
                     pwdInput.value = '';
@@ -1737,28 +1752,23 @@
             return div.innerHTML;
         }
 
-        function submitMessage() {
+        async function submitMessage() {
             const author = document.getElementById('msgAuthor').value.trim();
             const content = document.getElementById('msgContent').value.trim();
             if (!author) { document.getElementById('msgAuthor').focus(); return; }
             if (!content) { document.getElementById('msgContent').focus(); return; }
 
-            const msgs = getMessages();
-            msgs.push({
-                author,
-                content,
-                time: new Date().toLocaleString('zh-CN')
-            });
-            saveMessages(msgs);
+            const res = await apiCall('add_message', { author, content });
+            if (res.error) { alert(res.error); return; }
             document.getElementById('msgContent').value = '';
+            cachedMessages = null;
             renderMessages();
         }
 
         document.getElementById('msgSubmit').addEventListener('click', submitMessage);
 
         // ========== 爱情清单 ==========
-        const BUCKET_KEY = 'love_bucket_list';
-        const BUCKET_PASSWORD = '1314';
+        let cachedBucket = null;
 
         const bucketItems = [
             '一起去抓娃娃',
@@ -1863,20 +1873,20 @@
             '下辈子还要在一起'
         ];
 
-        function getBucketChecked() {
-            try { return JSON.parse(localStorage.getItem(BUCKET_KEY)) || {}; }
-            catch { return {}; }
+        async function getBucketChecked() {
+            if (cachedBucket) return cachedBucket;
+            try {
+                cachedBucket = await apiCall('get_bucket');
+                return cachedBucket;
+            } catch { return {}; }
         }
 
-        function saveBucketChecked(checked) {
-            localStorage.setItem(BUCKET_KEY, JSON.stringify(checked));
-        }
-
-        function toggleBucketItem(index) {
-            const checked = getBucketChecked();
-            checked[index] = !checked[index];
-            saveBucketChecked(checked);
-            updateBucketModal();
+        async function toggleBucketItem(index) {
+            const checked = await getBucketChecked();
+            const newVal = !checked[index];
+            checked[index] = newVal;
+            cachedBucket = checked;
+            await apiCall('toggle_bucket', { index, checked: newVal ? 1 : 0 });
         }
 
         function updateBucketModal() {
@@ -1894,8 +1904,8 @@
             });
         }
 
-        function openBucketList() {
-            const checked = getBucketChecked();
+        async function openBucketList() {
+            const checked = await getBucketChecked();
             const checkedCount = Object.values(checked).filter(Boolean).length;
 
             const overlay = document.createElement('div');
@@ -1933,10 +1943,10 @@
             overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 
             overlay.querySelectorAll('.bucket-item').forEach(item => {
-                item.addEventListener('click', () => {
+                item.addEventListener('click', async () => {
                     const idx = parseInt(item.dataset.index);
-                    toggleBucketItem(idx);
-                    const c = getBucketChecked();
+                    await toggleBucketItem(idx);
+                    const c = await getBucketChecked();
                     const checkbox = item.querySelector('.bucket-checkbox');
                     if (c[idx]) {
                         item.classList.add('checked');
