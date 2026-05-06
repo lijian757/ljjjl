@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>我们的爱情运行时长</title>
     <style>
         /* ========== 全局样式重置 ========== */
@@ -318,7 +318,7 @@
         /* ========== 底部状态栏 ========== */
         .status-bar {
             position: fixed;
-            bottom: 30px;
+            bottom: calc(30px + env(safe-area-inset-bottom, 0px));
             left: 50%;
             transform: translateX(-50%);
             font-size: clamp(0.7rem, 2vw, 0.9rem);
@@ -396,9 +396,19 @@
             }
 
             .status-bar {
-                flex-direction: column;
-                gap: 10px;
-                padding: 12px 20px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 3px 6px;
+                padding: 8px 14px;
+                bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+                max-width: 96vw;
+            }
+
+            body {
+                background-attachment: scroll;
+                background-size: cover;
+                background-position: center center;
             }
 
             .subtitle::before,
@@ -1761,7 +1771,7 @@
             '给对方做生日蛋糕',
             '公众场合拥抱',
             '一起去鬼屋',
-            '一起去蹦极',
+            '一起去看极光',
             '一起去见证朋友的婚礼',
             '一起喝醉一次',
             '给对方吹头发',
@@ -1769,7 +1779,7 @@
             '一起去寺庙祈福',
             '一起回母校拍照',
             '一起挤公交',
-            '一起放孔明灯',
+            '一起折纸飞机',
             '一起用情侣手机壳',
             '一起玩游戏',
             '一起去看海',
@@ -1844,7 +1854,7 @@
             '一起去天涯海角',
             '一起去一次图书馆',
             '一起养一只宠物',
-            '一起在铁轨上散步',
+            '一起在雨后漫步',
             '互相说对方的一个缺点和优点',
             '一起选戒指',
             '一起拍婚纱照',
